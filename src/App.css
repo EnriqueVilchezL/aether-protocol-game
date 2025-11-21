@@ -40,3 +40,30 @@
 .read-the-docs {
   color: #888;
 }
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Scrollbar for a sleek space aesthetic */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #10b981; /* Emerald 500 */
+  border-radius: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #111827; /* Gray 900 */
+}
+
+/* Custom caret for code editor */
+.custom-caret {
+  caret-color: #34d399; /* Emerald 400 */
+}
+
+/* Set global font to Inter and ensure monospace is used correctly */
+body {
+  font-family: 'Inter', sans-serif;
+}

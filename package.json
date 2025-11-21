@@ -8,10 +8,11 @@
     "build": "vite build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "predeploy": "npm run build", 
+    "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
+    "lucide-react": "^0.554.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
@@ -28,5 +29,4 @@
     "vite": "^7.2.4"
   },
   "homepage": "https://enriquevilchezl.github.io/aether-protocol-game/"
-
 }

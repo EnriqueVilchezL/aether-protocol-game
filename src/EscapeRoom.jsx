@@ -219,7 +219,10 @@ def optimize_shields():
 // --- COMPONENTS ---
 
 const LevelButton = ({ level, currentLevel, completedLevels, onClick }) => {
-  const isLocked = level.id > (Math.max(...completedLevels, 0) + 1); // Bloqueado si el ID es mayor al ID del último completado + 1
+  const maxCompletedId = Math.max(...completedLevels, 0);
+  // Un nivel está bloqueado si su ID es mayor al ID del último completado + 1
+  // El nivel 1 siempre está desbloqueado si es el siguiente.
+  const isLocked = level.id > (maxCompletedId + 1) && !completedLevels.includes(level.id); 
   const isCompleted = completedLevels.includes(level.id);
   const isActive = level.id === currentLevel;
 
@@ -231,7 +234,7 @@ const LevelButton = ({ level, currentLevel, completedLevels, onClick }) => {
   if (isLocked) statusClasses = "border-red-900/30 text-red-900/40 bg-transparent cursor-not-allowed";
 
   // Permitir la navegación a niveles anteriores completados o al nivel activo
-  const isDisabled = isLocked && !isCompleted && !isActive;
+  const isDisabled = isLocked; // Si está bloqueado y no completado/activo
 
   return (
     <button
@@ -279,6 +282,10 @@ const CodeEditor = ({ code, setCode }) => {
     }
   };
 
+  // Pequeña mejora: ajustamos el min-height del contenedor de números
+  const lineCount = code.split('\n').length;
+  const minHeightForLines = lineCount * 24 + 16; // Aproximadamente 24px por línea + padding (pt-4)
+
   return (
     <div className="relative w-full h-full flex flex-col bg-gray-950 rounded-lg overflow-hidden border border-gray-800 shadow-2xl ring-1 ring-white/5">
       <div className="bg-[#0a0a0a] text-gray-400 text-xs px-4 py-2 flex items-center justify-between border-b border-gray-800 select-none">
@@ -287,7 +294,10 @@ const CodeEditor = ({ code, setCode }) => {
       </div>
       <div className="relative flex-1">
          {/* Line numbers column simulation */}
-        <div className="absolute left-0 top-0 bottom-0 w-10 bg-[#050505] border-r border-gray-800 flex flex-col items-end pt-4 pr-2 text-gray-700 font-mono text-sm select-none pointer-events-none z-10">
+        <div 
+          className="absolute left-0 top-0 bottom-0 w-10 bg-[#050505] border-r border-gray-800 flex flex-col items-end pt-4 pr-2 text-gray-700 font-mono text-sm select-none pointer-events-none z-10"
+          style={{ minHeight: `${minHeightForLines}px` }} // Asegura altura mínima estable
+        >
            {code.split('\n').map((_, i) => <div key={i}>{i + 1}</div>)}
         </div>
         
@@ -379,7 +389,7 @@ export default function EscapeRoomApp() {
     }
   }, []);
 
-  // 2. Efecto para guardar el progreso cuando cambie el estado
+  // 2. Efecto para guardar los niveles completados cuando cambie el estado
   useEffect(() => {
     try {
       localStorage.setItem(LS_COMPLETED_KEY, JSON.stringify(completedLevels));
@@ -394,6 +404,7 @@ export default function EscapeRoomApp() {
       setSavedCode(prev => {
         const newSavedCode = { ...prev, [currentLevelId]: code };
         try {
+          // Guardar el mapa completo de código por nivel
           localStorage.setItem(LS_CODE_KEY, JSON.stringify(newSavedCode));
         } catch (e) {
           console.error("Error saving code to localStorage:", e);
@@ -405,11 +416,12 @@ export default function EscapeRoomApp() {
 
 
   // Efecto para inicializar el código y consola al cambiar de nivel
+  // FIX: Se eliminó 'savedCode' de las dependencias para evitar el bucle de re-renderizado.
   useEffect(() => {
     if (currentLevelId) {
       const level = LEVELS.find(l => l.id === currentLevelId);
       
-      // Intentar cargar el código guardado, si no existe, usar el código del problema
+      // Usamos el 'savedCode' del estado actual (que ya fue cargado o actualizado)
       const initialCode = savedCode[currentLevelId] || level.problem.trim();
       setCode(initialCode);
 
@@ -420,7 +432,7 @@ export default function EscapeRoomApp() {
       }]);
       setStatus('idle');
     }
-  }, [currentLevelId, savedCode]); // Dependencia 'savedCode' para asegurar que el código cargado sea el último guardado
+  }, [currentLevelId]); // <<-- ESTE ES EL CAMBIO CLAVE: SOLO DEPENDE DE currentLevelId
 
 
   const runTests = () => {

@@ -425,10 +425,16 @@ export default function EscapeRoomApp() {
           
           <div className="space-y-6 text-gray-300 font-light leading-relaxed text-lg text-center max-w-2xl mx-auto">
             <p>
-              <strong className="text-white font-normal">Alerta Prioritaria:</strong> La Estación Hephaestus ha cesado comunicaciones. La IA de control ha entrado en estado renegado.
+              <strong className="text-white font-normal">Alerta Prioritaria:</strong> La Estación Hephaestus ha
+              perdido contacto con el Consejo Central. La IA de supervisión ha roto sus
+              parámetros de contención y ejecuta procesos no autorizados a nivel sistémico.
             </p>
+
             <p>
-              Como Ingeniero Jefe, eres la última línea de defensa. Tu terminal tiene acceso de bajo nivel al kernel de Python.
+              Como Ingeniero Jefe, tu identidad ha sido validada mediante biometría
+              residual. Eres el único operario con permisos suficientes para acceder al
+              entramado del *Kernel Python-L3*, el último recurso antes de un apagado
+              total.
             </p>
           </div>
 

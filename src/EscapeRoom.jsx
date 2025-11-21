@@ -219,7 +219,7 @@ def optimize_shields():
 // --- COMPONENTS ---
 
 const LevelButton = ({ level, currentLevel, completedLevels, onClick }) => {
-  const isLocked = level.id > currentLevel && !completedLevels.includes(level.id);
+  const isLocked = level.id > (Math.max(...completedLevels, 0) + 1); // Bloqueado si el ID es mayor al ID del último completado + 1
   const isCompleted = completedLevels.includes(level.id);
   const isActive = level.id === currentLevel;
 
@@ -230,25 +230,28 @@ const LevelButton = ({ level, currentLevel, completedLevels, onClick }) => {
   if (isActive) statusClasses = "border-cyan-400 text-cyan-300 bg-cyan-900/20 shadow-[0_0_15px_rgba(34,211,238,0.1)]";
   if (isLocked) statusClasses = "border-red-900/30 text-red-900/40 bg-transparent cursor-not-allowed";
 
+  // Permitir la navegación a niveles anteriores completados o al nivel activo
+  const isDisabled = isLocked && !isCompleted && !isActive;
+
   return (
     <button
-      onClick={() => !isLocked && onClick(level.id)}
-      disabled={isLocked}
+      onClick={() => !isDisabled && onClick(level.id)}
+      disabled={isDisabled}
       className={`${baseClasses} ${statusClasses}`}
     >
       {/* Hover Effect overlay */}
-      {!isLocked && <div className="absolute inset-0 bg-white/5 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500 ease-out"></div>}
+      {!isDisabled && <div className="absolute inset-0 bg-white/5 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500 ease-out"></div>}
       
       <div className="flex items-center gap-4 z-10">
-        <div className={`p-2 rounded-sm ${isLocked ? 'bg-gray-900/50' : isActive ? 'bg-cyan-900/40 text-cyan-200' : 'bg-gray-800/50'}`}>
-          {isLocked ? <Lock size={14} /> : isCompleted ? <CheckCircle size={14} /> : <Activity size={14} />}
+        <div className={`p-2 rounded-sm ${isDisabled ? 'bg-gray-900/50' : isActive ? 'bg-cyan-900/40 text-cyan-200' : 'bg-gray-800/50'}`}>
+          {isDisabled ? <Lock size={14} /> : isCompleted ? <CheckCircle size={14} /> : <Activity size={14} />}
         </div>
         <div className="text-left">
           <div className="text-[10px] font-bold tracking-widest opacity-60 uppercase mb-0.5">Sector 0{level.id}</div>
           <div className={`font-mono text-sm font-semibold ${isActive ? 'text-white' : ''}`}>{level.title}</div>
         </div>
       </div>
-      {!isLocked && <ChevronRight size={16} className={`transition-transform group-hover:translate-x-1 ${isActive ? 'text-cyan-400' : 'opacity-50'}`} />}
+      {!isDisabled && <ChevronRight size={16} className={`transition-transform group-hover:translate-x-1 ${isActive ? 'text-cyan-400' : 'opacity-50'}`} />}
     </button>
   );
 };
@@ -345,14 +348,71 @@ export default function EscapeRoomApp() {
   const [currentLevelId, setCurrentLevelId] = useState(null); 
   const [code, setCode] = useState("");
   const [consoleLogs, setConsoleLogs] = useState([]);
-  const [completedLevels, setCompletedLevels] = useState([]);
+  const [completedLevels, setCompletedLevels] = useState([]); // Array de IDs de niveles completados
   const [status, setStatus] = useState('idle'); 
   const [showIntro, setShowIntro] = useState(true);
+  const [savedCode, setSavedCode] = useState({}); // Nuevo estado para guardar el código escrito por nivel
 
+  const LS_COMPLETED_KEY = 'cortex_completed_levels';
+  const LS_CODE_KEY = 'cortex_saved_code';
+  
+  // 1. Efecto para cargar el progreso inicial al montar el componente
+  useEffect(() => {
+    try {
+      // Cargar niveles completados
+      const storedCompleted = localStorage.getItem(LS_COMPLETED_KEY);
+      if (storedCompleted) {
+        setCompletedLevels(JSON.parse(storedCompleted));
+      }
+      
+      // Cargar código guardado
+      const storedCode = localStorage.getItem(LS_CODE_KEY);
+      if (storedCode) {
+        setSavedCode(JSON.parse(storedCode));
+      }
+
+    } catch (e) {
+      console.error("Error loading state from localStorage:", e);
+      // Fallback a estados iniciales
+      setCompletedLevels([]);
+      setSavedCode({});
+    }
+  }, []);
+
+  // 2. Efecto para guardar el progreso cuando cambie el estado
+  useEffect(() => {
+    try {
+      localStorage.setItem(LS_COMPLETED_KEY, JSON.stringify(completedLevels));
+    } catch (e) {
+      console.error("Error saving completed levels to localStorage:", e);
+    }
+  }, [completedLevels]);
+
+  // 3. Efecto para guardar el código actual en 'savedCode' cada vez que cambie 'code'
+  useEffect(() => {
+    if (currentLevelId !== null) {
+      setSavedCode(prev => {
+        const newSavedCode = { ...prev, [currentLevelId]: code };
+        try {
+          localStorage.setItem(LS_CODE_KEY, JSON.stringify(newSavedCode));
+        } catch (e) {
+          console.error("Error saving code to localStorage:", e);
+        }
+        return newSavedCode;
+      });
+    }
+  }, [code, currentLevelId]);
+
+
+  // Efecto para inicializar el código y consola al cambiar de nivel
   useEffect(() => {
     if (currentLevelId) {
       const level = LEVELS.find(l => l.id === currentLevelId);
-      setCode(level.problem.trim());
+      
+      // Intentar cargar el código guardado, si no existe, usar el código del problema
+      const initialCode = savedCode[currentLevelId] || level.problem.trim();
+      setCode(initialCode);
+
       setConsoleLogs([{
         time: new Date().toLocaleTimeString([], { hour12: false }),
         type: 'info',
@@ -360,7 +420,8 @@ export default function EscapeRoomApp() {
       }]);
       setStatus('idle');
     }
-  }, [currentLevelId]);
+  }, [currentLevelId, savedCode]); // Dependencia 'savedCode' para asegurar que el código cargado sea el último guardado
+
 
   const runTests = () => {
     setStatus('running');
@@ -391,6 +452,7 @@ export default function EscapeRoomApp() {
           { time, type: 'success', msg: `${level.testOutput}\n\nACCESS GRANTED: ${level.successMsg}` }
         ]);
         if (!completedLevels.includes(level.id)) {
+          // Si es exitoso, marcamos el nivel como completado
           setCompletedLevels(prev => [...prev, level.id]);
         }
       }
@@ -404,6 +466,10 @@ export default function EscapeRoomApp() {
 
   // --- INTRO SCREEN (Elegant Space Theme) ---
   if (showIntro) {
+    // Determinar el nivel al que debe ir si ya hay progreso
+    const maxCompletedId = Math.max(...completedLevels, 0);
+    const nextLevelToStart = maxCompletedId === 6 ? 1 : maxCompletedId + 1; // Si completó todo, vuelve al 1
+    
     return (
       <div className="min-h-screen bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-800 via-[#050505] to-black text-white font-sans flex flex-col items-center justify-center p-8 relative overflow-hidden">
         {/* Starfield Effect Simulation with particles would go here, using simple dots for now */}
@@ -425,20 +491,22 @@ export default function EscapeRoomApp() {
           
           <div className="space-y-6 text-gray-300 font-light leading-relaxed text-lg text-center max-w-2xl mx-auto">
             <p>
-              <strong className="text-white font-normal">Alerta Prioritaria:</strong> La Estación Hephaestus ha
-              perdido contacto con el Consejo Central. La IA de supervisión ha roto sus
-              parámetros de contención y ejecuta procesos no autorizados a nivel sistémico.
+              <strong className="text-white font-normal">Alerta Prioritaria:</strong> La Estación Hephaestus ha cesado comunicaciones. La IA de control ha entrado en estado renegado.
             </p>
-
             <p>
-              Como Ingeniero Jefe, tu identidad ha sido validada mediante biometría
-              residual. Eres el único operario con permisos suficientes para rescatar la estación.
+              Como Ingeniero Jefe, eres la última línea de defensa. Tu terminal tiene acceso de bajo nivel al kernel de Python.
             </p>
+            {maxCompletedId > 0 && (
+                <p className="text-sm text-cyan-400 pt-4 border-t border-gray-700/50">
+                    <CheckCircle size={14} className="inline mr-2"/>
+                    Progreso cargado: {completedLevels.length} de {LEVELS.length} sectores completados.
+                </p>
+            )}
           </div>
 
           <div className="mt-12 flex justify-center">
             <button 
-              onClick={() => startLevel(1)}
+              onClick={() => startLevel(nextLevelToStart)}
               className="group relative px-8 py-4 bg-green-900/20 border border-green-500/30 text-green-400 hover:text-white hover:bg-green-600 hover:border-green-500 transition-all duration-300 rounded overflow-hidden"
             >
               <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out"></div>

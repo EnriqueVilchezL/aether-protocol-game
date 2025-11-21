@@ -432,9 +432,7 @@ export default function EscapeRoomApp() {
 
             <p>
               Como Ingeniero Jefe, tu identidad ha sido validada mediante biometría
-              residual. Eres el único operario con permisos suficientes para acceder al
-              entramado del *Kernel Python-L3*, el último recurso antes de un apagado
-              total.
+              residual. Eres el único operario con permisos suficientes para rescatar la estación.
             </p>
           </div>
 

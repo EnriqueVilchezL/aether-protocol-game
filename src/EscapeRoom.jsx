@@ -916,7 +916,7 @@ export default function EscapeRoomApp() {
           
           <div className="space-y-6 text-gray-300 font-light leading-relaxed text-lg text-center max-w-2xl mx-auto">
             <p>
-              <strong className="text-white font-normal">Alerta Prioritaria:</strong> La Estación Hephaestus ha cesado comunicaciones. CORTEX, el sistema de IA de la nave, se ha vuelto malvado debido a una corrupción en su núcleo de datos, y ha activado protocolos de autodestrucción.
+              <strong className="text-white font-normal">Alerta Prioritaria:</strong> La Estación Hephaestus ha cesado comunicaciones. CORTEX, el sistema de IA de la estación, se ha vuelto malvado debido a una corrupción en su núcleo de datos, y ha activado protocolos de autodestrucción.
             </p>
             <p>
               Hemos inyectado un intérprete de Python en tu navegador. Úsalo para restaurar los sistemas. Eres nuestra única esperanza.
